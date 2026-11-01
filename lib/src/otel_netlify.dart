@@ -1,11 +1,12 @@
-// Licensed under the Dartastic Pro Software License Agreement.
+// Licensed under the Apache License, Version 2.0
 // Copyright 2025-2026 Mindful Software LLC d/b/a Dartastic.io, All rights reserved.
 
-import 'package:dartastic_opentelemetry/dartastic_opentelemetry.dart';
+import 'package:dartastic_opentelemetry_api/dartastic_opentelemetry_api.dart';
 
 import 'otel_netlify_suppression.dart';
 
 class NetlifyResult {
+  /// Creates a result.
   const NetlifyResult({
     this.account,
     this.siteId,
@@ -35,8 +36,13 @@ class NetlifyResult {
   final String? errorMessage;
 }
 
+/// What a traced call returned: the value for the caller plus fields
+/// recorded on the span.
 class NetlifyCallResult<T> {
+  /// Creates a call result.
   const NetlifyCallResult({required this.value, this.result});
+
+  /// The value returned to the caller.
   final T value;
   final NetlifyResult? result;
 }
@@ -44,71 +50,73 @@ class NetlifyCallResult<T> {
 Future<T> tracedNetlify<T>({
   required String operation,
   required Future<NetlifyCallResult<T>> Function() invoke,
-  Tracer? tracer,
+  APITracer? tracer,
 }) async {
   if (netlifyInstrumentationSuppressed()) {
     final r = await invoke();
     return r.value;
   }
-  final t = tracer ?? OTel.tracerProvider().getTracer('otel_netlify');
+  final t = tracer ?? OTelAPI.tracerProvider().getTracer('otel_netlify');
   final span = t.startSpan('netlify $operation', kind: SpanKind.client);
   try {
     span.addAttributes(
-        OTel.attributes([OTel.attributeString('rpc.system', 'netlify')]));
+        OTelAPI.attributes([OTelAPI.attributeString('rpc.system', 'netlify')]));
     final r = await invoke();
     final res = r.result;
     if (res != null) {
       if (res.account != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('netlify.account', res.account!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeString('netlify.account', res.account!)]));
       }
       if (res.siteId != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('netlify.site.id', res.siteId!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeString('netlify.site.id', res.siteId!)]));
       }
       if (res.siteName != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('netlify.site.name', res.siteName!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeString('netlify.site.name', res.siteName!)]));
       }
       if (res.deployId != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('netlify.deploy.id', res.deployId!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeString('netlify.deploy.id', res.deployId!)]));
       }
       if (res.deployState != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('netlify.deploy.state', res.deployState!)]));
+        span.addAttributes(OTelAPI.attributes([
+          OTelAPI.attributeString('netlify.deploy.state', res.deployState!)
+        ]));
       }
       if (res.functionName != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('faas.invoked_name', res.functionName!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeString('faas.invoked_name', res.functionName!)]));
       }
       if (res.branch != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('vcs.ref.head.name', res.branch!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeString('vcs.ref.head.name', res.branch!)]));
       }
       if (res.commit != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('vcs.ref.head.revision', res.commit!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeString('vcs.ref.head.revision', res.commit!)]));
       }
       if (res.edgeLocation != null) {
-        span.addAttributes(OTel.attributes([
-          OTel.attributeString('netlify.edge_location', res.edgeLocation!)
+        span.addAttributes(OTelAPI.attributes([
+          OTelAPI.attributeString('netlify.edge_location', res.edgeLocation!)
         ]));
       }
       if (res.statusCode != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeInt('http.response.status_code', res.statusCode!)]));
+        span.addAttributes(OTelAPI.attributes([
+          OTelAPI.attributeInt('http.response.status_code', res.statusCode!)
+        ]));
       }
       if (res.errorCode != null) {
-        span.addAttributes(OTel.attributes(
-            [OTel.attributeString('netlify.error.code', res.errorCode!)]));
+        span.addAttributes(OTelAPI.attributes(
+            [OTelAPI.attributeString('netlify.error.code', res.errorCode!)]));
       }
       final fail = res.errorCode != null ||
           (res.statusCode != null && res.statusCode! >= 400);
       if (fail) {
-        span.addAttributes(OTel.attributes([
-          OTel.attributeString(
-              ErrorResource.errorType.key, res.errorCode ?? 'netlify.error')
+        span.addAttributes(OTelAPI.attributes([
+          OTelAPI.attributeString(
+              ErrorAttributes.errorType.key, res.errorCode ?? 'netlify.error')
         ]));
         span.setStatus(SpanStatusCode.Error, res.errorMessage);
       }

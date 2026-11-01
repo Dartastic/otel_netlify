@@ -2,7 +2,7 @@ name: otel_netlify
 description: >-
   OpenTelemetry instrumentation for netlify by Dartastic.io. Adds standard
   OpenTelemetry observability to applications that use netlify.
-version: 0.1.0
+version: 0.1.1-wip
 repository: https://github.com/dartastic/otel_netlify
 homepage: https://dartastic.io
 
